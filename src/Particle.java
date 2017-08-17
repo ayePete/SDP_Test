@@ -137,16 +137,12 @@ public class Particle {
         double totalSum = journals.get(j).getSubToPub() *
                 (TOTAL_TIME - journals.get(j).getSubToPub() > 0 ? 1 : 0) * probabilityTerms;
         double totalProbability = probabilityTerms;
-        //int count = 0;
         for (j = 1; j < journals.size(); j++) {
             double resubmissionRiskProduct = 1;
             for (int i = 0; i < j; i++) { // using j instead of j-1 since index starts from 0
                 resubmissionRiskProduct *= (1 - journals.get(i).getAcceptanceRate()) *
                         Math.pow(1 - SCOOP_RATE, journals.get(i).getSubToPub() + REVISION_TIME);
-                //++count;
             }
-            //System.out.println("count = " + count);
-            //count = 0;
             probabilityTerms = journals.get(j).getAcceptanceRate() * resubmissionRiskProduct;
             // for scooping and acceptance
             double hSum = 0;
@@ -154,15 +150,6 @@ public class Particle {
                 hSum += journals.get(k).getSubToPub();
             }
             int heaviside = (TOTAL_TIME - hSum - j * REVISION_TIME) > 0 ? 1 : 0;
-
-            double subPub = journals.get(j).getSubToPub();
-            double dum = (subPub + j * REVISION_TIME);
-            System.out.println("subPub = " + subPub);
-            System.out.println("dum = " + dum);
-            System.out.println("heaviside = " + heaviside);
-            System.out.println("j = " + j);
-            System.out.println("probabilityTerms = " + probabilityTerms);
-
 
             totalSum += (journals.get(j).getSubToPub() + j * REVISION_TIME)
                     * probabilityTerms * heaviside;
