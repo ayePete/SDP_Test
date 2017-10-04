@@ -162,6 +162,68 @@ public class Particle {
         return totalSum / totalProbability;
     }
 
+    public static double computeP_jMax(ArrayList<Journal> journals){
+        System.out.println("-------------- P_JMax -----");
+        int jMax = 0;
+        for (int j = 0; j < N; j++) {
+            double jSum = 0;
+            for (int i = 0; i < j; i++) {
+                jSum += journals.get(i).getSubToPub();
+            }
+            double tDifference = TOTAL_TIME - (jSum -  j * REVISION_TIME);
+            if(tDifference > 0) {
+                jMax = j;
+            } else
+                break;
+        }
+
+        System.out.println("jMax = " + jMax);
+        double firstSumTerm = 0;
+        for (int j = 0; j <= jMax; j++) {
+
+            double preJSum = 0;
+            for (int i = 0; i < j; i++) {
+                preJSum += journals.get(i).getSubToPub();
+            }
+
+            double jSum = preJSum + ((j+1) * REVISION_TIME);
+            double resubmissionRiskProduct = 1;
+            for (int k = 0; k < j; k++) { // using j instead of j-1 since index starts from 0
+                resubmissionRiskProduct *= (1 - journals.get(k).getAcceptanceRate()) *
+                        Math.pow(1 - SCOOP_RATE, journals.get(k).getSubToPub() + REVISION_TIME);
+            }
+            firstSumTerm += journals.get(j).getAcceptanceRate() * jSum * resubmissionRiskProduct;
+        }
+
+        System.out.println("firstSumTerm = " + firstSumTerm);
+
+        // Min part
+        double minPreJSum = 0;
+        for (int i = 0; i <= jMax; i++) {
+            minPreJSum += journals.get(i).getSubToPub();
+        }
+        double minJSum = minPreJSum + ((jMax+1) * REVISION_TIME);
+
+
+        double minJMaxProdSum = 0;
+        for (int j = 0; j <= jMax; j++) {
+            double jMaxProd = 1;
+            for (int k = 0; k < j; k++) {
+                jMaxProd *= (1 - journals.get(k).getAcceptanceRate()) *
+                        Math.pow(1 - SCOOP_RATE, journals.get(k).getSubToPub() + REVISION_TIME);
+            }
+            minJMaxProdSum += journals.get(j).getAcceptanceRate() * jMaxProd;
+        }
+        System.out.println("minJMaxProdSum = " + minJMaxProdSum);
+        double minProdTerm = minJSum * (1 - minJMaxProdSum);
+        System.out.println("minJS = " + minJSum);
+        double totalSum = firstSumTerm + Math.min(TOTAL_TIME, minProdTerm);
+
+        System.out.println("totalSum = " + totalSum);
+
+        return totalSum;
+    }
+
     @Override
     public String toString() {
         return position.toString() + ": C = " + getC() + " R = " + getR() + " " + " P = " + getP() +
