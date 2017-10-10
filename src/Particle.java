@@ -12,7 +12,7 @@ public class Particle {
     public static final double REVISION_TIME = 30;
     public static final double SCOOP_RATE = 0.001;
     public static final int TOTAL_TIME = 1095;
-    public static final int N = 61;
+    public static final int N = 5;
 
     public double getP() {
         return p;
@@ -65,7 +65,7 @@ public class Particle {
     }
 
     private void computeP() {
-        p = computeP(journalSequence);
+        p = computeP_jMax(journalSequence);
     }
 
     public static double computeC(ArrayList<Journal> journals) {
@@ -79,7 +79,7 @@ public class Particle {
                 * Math.max(TOTAL_TIME - journals.get(j).getSubToPub(), 0) * probabilityTerms;
         double totalProbability = probabilityTerms; // for normalization constant, q;
 
-        for (j = 1; j < journals.size(); j++) {
+        for (j = 1; j < N; j++) {
             remainingTimeSum = 0;
             for (int k = 0; k < j; k++) {
                 remainingTimeSum += journals.get(k).getSubToPub();  // using j instead of j-1
@@ -108,7 +108,7 @@ public class Particle {
         double totalSum = (j + 1) * (TOTAL_TIME - journals.get(j).getSubToPub() > 0 ? 1 : 0) * probabilityTerms;
         double totalProbability = probabilityTerms;
 
-        for (j = 1; j < journals.size(); j++) {
+        for (j = 1; j < N; j++) {
             double resubmissionRiskProduct = 1;
             for (int i = 0; i < j; i++) { // using j instead of j-1 since index starts from 0
                 resubmissionRiskProduct *= (1 - journals.get(i).getAcceptanceRate()) *
@@ -137,7 +137,7 @@ public class Particle {
         double totalSum = journals.get(j).getSubToPub() *
                 (TOTAL_TIME - journals.get(j).getSubToPub() > 0 ? 1 : 0) * probabilityTerms;
         double totalProbability = probabilityTerms;
-        for (j = 1; j < journals.size(); j++) {
+        for (j = 1; j < N; j++) {
             double resubmissionRiskProduct = 1;
             for (int i = 0; i < j; i++) { // using j instead of j-1 since index starts from 0
                 resubmissionRiskProduct *= (1 - journals.get(i).getAcceptanceRate()) *
@@ -165,12 +165,10 @@ public class Particle {
     public static double computeP_jMax(ArrayList<Journal> journals){
         System.out.println("-------------- P_JMax -----");
         int jMax = 0;
+        double sum = 0;
         for (int j = 0; j < N; j++) {
-            double jSum = 0;
-            for (int i = 0; i < j; i++) {
-                jSum += journals.get(i).getSubToPub();
-            }
-            double tDifference = TOTAL_TIME - (jSum -  j * REVISION_TIME);
+            sum += journals.get(j).getSubToPub();
+            double tDifference = TOTAL_TIME - sum -  j * REVISION_TIME;
             if(tDifference > 0) {
                 jMax = j;
             } else
@@ -179,6 +177,9 @@ public class Particle {
 
         System.out.println("jMax = " + jMax);
         double firstSumTerm = 0;
+        double jSum = 0;
+        double resubmissionRiskProduct = 1;
+        double alphaProd = 0;
         for (int j = 0; j <= jMax; j++) {
 
             double preJSum = 0;
@@ -186,14 +187,19 @@ public class Particle {
                 preJSum += journals.get(i).getSubToPub();
             }
 
-            double jSum = preJSum + ((j+1) * REVISION_TIME);
-            double resubmissionRiskProduct = 1;
+            jSum = preJSum + ((j+1) * REVISION_TIME);
+
+            resubmissionRiskProduct = 1;
             for (int k = 0; k < j; k++) { // using j instead of j-1 since index starts from 0
                 resubmissionRiskProduct *= (1 - journals.get(k).getAcceptanceRate()) *
                         Math.pow(1 - SCOOP_RATE, journals.get(k).getSubToPub() + REVISION_TIME);
             }
             firstSumTerm += journals.get(j).getAcceptanceRate() * jSum * resubmissionRiskProduct;
+            alphaProd += journals.get(j).getAcceptanceRate() * resubmissionRiskProduct;
         }
+        System.out.println("jSum = " + jSum);
+        System.out.println("resubmissionRiskProduct = " + resubmissionRiskProduct);
+        System.out.println("alphaProd = " + alphaProd);
 
         System.out.println("firstSumTerm = " + firstSumTerm);
 
@@ -214,9 +220,10 @@ public class Particle {
             }
             minJMaxProdSum += journals.get(j).getAcceptanceRate() * jMaxProd;
         }
-        System.out.println("minJMaxProdSum = " + minJMaxProdSum);
+        System.out.println("minJMaxProdSum = " + (minJMaxProdSum));
         double minProdTerm = minJSum * (1 - minJMaxProdSum);
         System.out.println("minJS = " + minJSum);
+        System.out.println("minProdTerm = " + minProdTerm);
         double totalSum = firstSumTerm + Math.min(TOTAL_TIME, minProdTerm);
 
         System.out.println("totalSum = " + totalSum);
